@@ -39,18 +39,3 @@ jobs:
             --creds "$REGISTRY_LOGIN:$REGISTRY_PASSWORD" \
             --format oci \
             "baraniecki.eu/$IMAGE_NAME" "docker://$REGISTRY_PUSH_DOMAIN/$IMAGE_NAME:latest"
-
-      - name: Trigger garbage collection on the registry
-        env:
-          REGISTRY_LOGIN: ${{ secrets.REGISTRY_LOGIN }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-          REGISTRY_PUSH_DOMAIN: ${{ secrets.REGISTRY_PUSH_DOMAIN }}
-        run: |
-          curl \
-            --fail \
-            -X POST \
-            --basic \
-            --user "$REGISTRY_LOGIN:$REGISTRY_PASSWORD" \
-            "https://$REGISTRY_PUSH_DOMAIN/v2/$IMAGE_NAME/gc"
-
-
