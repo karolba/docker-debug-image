@@ -2,7 +2,7 @@ name: "Build baraniecki.eu/dbg:latest"
 
 on:
   push:
-    branches: [main]
+    branches: [main, testing]
   schedule:
     - cron: '45 4 * * *' # 4:45 UTC every day
 
@@ -15,9 +15,15 @@ concurrency:
 jobs:
   build-dbg-image:
     runs-on: ubuntu-24.04
+
     container:
       image: quay.io/buildah/stable
       options: --privileged
+
+    defaults:
+      run:
+        shell: bash
+
     steps:
       - name: Check out the repository
         uses: actions/checkout@v4
@@ -29,13 +35,32 @@ jobs:
             --platform linux/arm64,linux/amd64 \
             --manifest "baraniecki.eu/$IMAGE_NAME"
 
-      - name: Push images
-        env:
-          REGISTRY_LOGIN: ${{ secrets.REGISTRY_LOGIN }}
-          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
-          REGISTRY_PUSH_DOMAIN: ${{ secrets.REGISTRY_PUSH_DOMAIN }}
+      #- name: Push images
+      #  env:
+      #    REGISTRY_LOGIN: ${{ secrets.REGISTRY_LOGIN }}
+      #    REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+      #    REGISTRY_PUSH_DOMAIN: ${{ secrets.REGISTRY_PUSH_DOMAIN }}
+      #  run: |
+      #    buildah manifest push \
+      #      --creds "$REGISTRY_LOGIN:$REGISTRY_PASSWORD" \
+      #      --format oci \
+      #      "baraniecki.eu/$IMAGE_NAME" "docker://$REGISTRY_PUSH_DOMAIN/$IMAGE_NAME:latest"
+
+      - name: Export image to a directory
         run: |
-          buildah manifest push \
-            --creds "$REGISTRY_LOGIN:$REGISTRY_PASSWORD" \
-            --format oci \
-            "baraniecki.eu/$IMAGE_NAME" "docker://$REGISTRY_PUSH_DOMAIN/$IMAGE_NAME:latest"
+          buildah manifest push --format oci "baraniecki.eu/$IMAGE_NAME" dir:export
+
+      - name: Make a list of SHAs this latest tag uses
+        id: shas
+        working-directory: export
+        run: |
+          {
+            echo 'shas<<EOF'
+            for file in *; do
+              case "$file" in
+                ????????????????????????????????????????????????????????????????) echo "$file" ;;
+                ????????????????????????????????????????????????????????????????.manifest.json) echo "${file%%.manifest.json}" ;;
+              esac
+            done
+            echo 'EOF'
+          } | tee -a "$GITHUB_ENV"
