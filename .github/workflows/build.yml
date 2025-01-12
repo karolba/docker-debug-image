@@ -3,6 +3,8 @@ name: "Build baraniecki.eu/dbg:latest"
 on:
   push:
     branches: [main]
+  schedule:
+    - cron: '45 4 * * *' # 4:45 UTC every day
 
 jobs:
   build-dbg-image:
