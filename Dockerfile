@@ -27,16 +27,7 @@ RUN <<-EOF
 		yq
 EOF
 
-# todo: is this a good idea?
-
-## If the debugging image is ran erroneously as non-root, allow switching
-#RUN  \
-#	seq 1000 1999 | while read -r uid; do \
-#		echo permit persist nopass $uid persist; \
-#		echo permit persist nopass :$uid persist; \
-#	done >> /etc/doas.d/everyone.conf
-
-# Prefetch GitHub's known hosts
+# Prefetch GitHub's ssh fingerprints
 RUN <<-EOF bash -eo pipefail
 	curl https://api.github.com/meta | jq -r '.ssh_keys[]' >> /etc/ssh/ssh_known_hosts
 EOF
