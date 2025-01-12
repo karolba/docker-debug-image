@@ -6,6 +6,12 @@ on:
   schedule:
     - cron: '45 4 * * *' # 4:45 UTC every day
 
+env:
+  IMAGE_NAME: dbg
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+
 jobs:
   build-dbg-image:
     runs-on: ubuntu-24.04
@@ -21,7 +27,7 @@ jobs:
           buildah build \
             --jobs 2 \
             --platform linux/arm64,linux/amd64 \
-            --manifest baraniecki.eu/dbg
+            --manifest "baraniecki.eu/$IMAGE_NAME"
 
       - name: Push images
         env:
@@ -32,5 +38,19 @@ jobs:
           buildah manifest push \
             --creds "$REGISTRY_LOGIN:$REGISTRY_PASSWORD" \
             --format oci \
-            baraniecki.eu/dbg "docker://$REGISTRY_PUSH_DOMAIN/dbg:latest"
+            "baraniecki.eu/$IMAGE_NAME" "docker://$REGISTRY_PUSH_DOMAIN/$IMAGE_NAME:latest"
+
+      - name: Trigger garbage collection on the registry
+        env:
+          REGISTRY_LOGIN: ${{ secrets.REGISTRY_LOGIN }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          REGISTRY_PUSH_DOMAIN: ${{ secrets.REGISTRY_PUSH_DOMAIN }}
+        run: |
+          curl \
+            --fail \
+            -X POST \
+            --basic \
+            --user "$REGISTRY_LOGIN:$REGISTRY_PASSWORD" \
+            "https://$REGISTRY_PUSH_DOMAIN/v2/$IMAGE_NAME/gc"
+
 
