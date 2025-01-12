@@ -1,0 +1,34 @@
+name: "Build baraniecki.eu/dbg:latest"
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-dbg-image:
+    runs-on: ubuntu-24.04
+    container:
+      image: quay.io/buildah/stable
+      options: --privileged
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Build images
+        run: |
+          buildah build \
+            --jobs 2 \
+            --platform linux/arm64,linux/amd64 \
+            --manifest baraniecki.eu/dbg
+
+      - name: Push images
+        env:
+          REGISTRY_LOGIN: ${{ secrets.REGISTRY_LOGIN }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+          REGISTRY_PUSH_DOMAIN: ${{ secrets.REGISTRY_PUSH_DOMAIN }}
+        run: |
+          buildah manifest push \
+            --creds "$REGISTRY_LOGIN:$REGISTRY_PASSWORD" \
+            --format oci \
+            baraniecki.eu/dbg "docker://$REGISTRY_PUSH_DOMAIN/dbg:latest"
+
